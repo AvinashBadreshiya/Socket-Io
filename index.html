@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+        <link rel="stylesheet" type="text/css" href="/assets/style.css">
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script>
+            var socket = io();
+            var id, getUser;
+            socket.on('res', (resdata) => {
+                console.log("res no log", resdata);
+                if (resdata.en == "Login") {
+                    loginresponse(resdata.data);
+                } else if (resdata.en == "userlist") {
+                    userview(resdata.data);
+                } else if (resdata.en == "sendmsg") {
+                    console.log("Send Msg::::", resdata.data)
+                    sendmessage(resdata.data);
+                } else {
+                    console.log("Not Event Handle");
+                }
+            });
+
+            function userview(data) {
+                console.log("user view", data);
+                console.log("user list", data.userInfo);
+
+                $(document).ready(function () {
+                    getUser = $('#username').val();
+
+                    console.log("login user", getUser);
+                    $(".users").html("");
+                    $.each(data.userInfo, function (index, value) {
+                        // var id = value._id;
+                        // console.log(id);
+                        console.log(index, value);
+                        if (getUser != value.username) {
+                            var addBtn = $('<button class="btn" id="' + value._id + '" type="button" onClick=getuserinfo(this.id)>' + value.username + '</button>');
+                            $(".users").append(addBtn);
+                        }
+                    });
+                });
+            }
+
+            function getuserinfo(userid) {
+
+                id = userid
+                console.log(id);
+            }
+            $(document).ready(function () {
+
+                $("#send").click(function () {
+                    console.log("user id", id);
+                    var empty = $('#message').val();
+                    if (id == undefined) {
+                        alert("please select user");
+                        return false;
+                    }
+                    if (empty == '' || empty == ' ') {
+                        alert("please enter msg");
+                    }
+                    else {
+                        var msg = $("#message").val();
+                        var getUser = $("#username").val();
+                        console.log(msg);
+                        socket.emit('req', { en: "chatmsg", data: { rid: id, message: msg, username: getUser } });
+                        $('.chat-message').append('<ul style="text-align:end;"><li>' + msg + ' : ' + getUser + '</li></ul>');
+                        $('#message').val('');
+                    }
+                });
+            });
+
+            function loginresponse(data) {
+                getUser = $('#username').val();
+                if (data.success == 1) {
+                    $(".loginscreen").hide();
+                    $(".chatscreen").css({ "display": "block" });
+                    $(".active").html(getUser);
+                }
+                else {
+                    alert("Incorrect username");
+                }
+            }
+
+            function sendmessage(data) {
+                console.log("msg send", data);
+                $('.chat-message').append('<ul style="text-align:start;"><li>' + data.username + ' : ' + data.msg + '</li></ul>');
+            }
+
+            $(document).ready(function () {
+                $("#hide").click(function () {
+                    var username = $('#username').val();
+
+                    socket.emit('req', {
+                        en: "Login",
+                        data: {
+                            uname: username,
+                        }
+                    });
+
+                });
+            });
+        </script>
+        <script type="text/javascript">
+
+        </script>
+
+    <body>
+        <div class="loginscreen">
+            <center>
+                <h2>Login Page</h2>
+                <table>
+                    <tr>
+                        <td>Enter Your Username:</td>
+                        <td><input type="text" id="username"></td>
+                    </tr>
+
+                    <tr>
+                        <td></td>
+                        <td><input type="submit" name="submit" value="Login" id="hide"></td>
+                    </tr>
+                </table>
+            </center>
+        </div>
+        <div class="chatscreen">
+            <div class="active"></div>
+            <div class="window">
+                <div class="chat-message">
+                </div>
+                <div class='fields'>
+                    <input type="text" id="message" placeholder="Enter message">
+                    <button id="send">Send</button>
+                </div>
+            </div>
+            <div class="online">
+                <p class="users-online">Users Online</p>
+                <div class="users" id="user">
+
+                </div>
+            </div>
+        </div>
+
+    </body>
+
+</html>
